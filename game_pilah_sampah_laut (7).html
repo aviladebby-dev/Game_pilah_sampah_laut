@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Misi Penyelamatan Laut - TK PGRI Janti</title>
+    <!-- Tailwind for styling layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for background music & sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Base Styles & Pixar 3D Theme */
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #87CEEB;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* 3D Button Style */
+        .btn-3d {
+            background: linear-gradient(180deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            border: none;
+            color: #d81b60;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border-radius: 50px;
+            box-shadow: 0 8px 0 #c2185b, 0 15px 20px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-3d:active {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0 #c2185b, 0 5px 10px rgba(0,0,0,0.2);
+        }
+        .btn-3d.blue {
+            background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+            color: #01579b;
+            box-shadow: 0 8px 0 #0277bd, 0 15px 20px rgba(0,0,0,0.2);
+        }
+        .btn-3d.blue:active { box-shadow: 0 0px 0 #0277bd; }
+        
+        .btn-3d.green {
+            background: linear-gradient(180deg, #a8e063 0%, #56ab2f 100%);
+            color: #1b5e20;
+            box-shadow: 0 8px 0 #2e7d32, 0 15px 20px rgba(0,0,0,0.2);
+        }
+        .btn-3d.green:active { box-shadow: 0 0px 0 #2e7d32; }
+        
+        .btn-3d:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: 0 8px 0 rgba(0,0,0,0.3) !important;}
+
+        /* Ocean Background Animation */
+        .ocean {
+            background: linear-gradient(180deg, #2b7a78 0%, #17252a 100%);
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: rise 5s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+
+        /* Scenery Undersea (Ikan & Terumbu Karang) */
+        .coral-reef { position: absolute; bottom: 10px; font-size: 3.5rem; z-index: 1; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); user-select: none; }
+        .swimming-fish { position: absolute; font-size: 2.5rem; z-index: 1; white-space: nowrap; user-select: none; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3)); }
+        .swim-right { animation: swimRight linear infinite; }
+        .swim-left { animation: swimLeft linear infinite; }
+        /* Emoji ikan (🐟, 🐠, 🐡) secara default menghadap ke kiri. 
+           Jadi untuk berenang ke kanan (swimRight) kita harus membalik (scaleX(-1)) wajahnya, 
+           dan untuk ke kiri (swimLeft) gunakan hadapan aslinya (scaleX(1)). */
+        @keyframes swimRight { from { transform: translateX(-10vw) scaleX(-1); } to { transform: translateX(110vw) scaleX(-1); } }
+        @keyframes swimLeft { from { transform: translateX(110vw) scaleX(1); } to { transform: translateX(-10vw) scaleX(1); } }
+
+        /* Trash Item Styling */
+        .trash-item {
+            font-size: 5rem;
+            filter: drop-shadow(0px 10px 5px rgba(0,0,0,0.3));
+            position: absolute;
+            cursor: grab;
+            z-index: 50;
+            transition: transform 0.2s ease;
+            user-select: none;
+            touch-action: none;
+        }
+        .trash-item:active { cursor: grabbing; transform: scale(1.1); }
+        .trash-item.dragging { transition: none; transform: scale(1.2); }
+
+        /* Bins Styling */
+        .bin {
+            width: 100px;
+            height: 120px;
+            border-radius: 15px 15px 5px 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
+            color: white;
+            font-weight: 900;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.3), 0 10px 15px rgba(0,0,0,0.4);
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .bin::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        .bin.organik { background: linear-gradient(180deg, #4caf50, #2e7d32); }
+        .bin.anorganik { background: linear-gradient(180deg, #ffca28, #f57f17); }
+        .bin.b3 { background: linear-gradient(180deg, #f44336, #c62828); }
+        .bin-highlight { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,255,255,0.8); }
+
+        /* Speech Balloon */
+        .speech-bubble {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: 4px solid #4facfe;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 20px 20px 0;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+            display: block;
+            width: 0;
+            z-index: 1;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 23px 23px 0;
+            border-style: solid;
+            border-color: #4facfe transparent transparent transparent;
+            display: block;
+            width: 0;
+        }
+
+        /* Coding Blocks & Slots */
+        .coding-block {
+            background: linear-gradient(180deg, #ffeb3b, #fbc02d);
+            border: 4px solid #f9a825;
+            color: #d84315;
+            padding: 10px 20px;
+            font-size: 1.8rem;
+            font-weight: 900;
+            border-radius: 15px;
+            box-shadow: 0 6px 0 #f57f17, 0 10px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+            user-select: none;
+        }
+        .coding-block:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #f57f17;
+        }
+        .coding-slot {
+            background: rgba(0,0,0,0.05);
+            border: 4px dashed #90caf9;
+            border-radius: 15px;
+            width: 70px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 900;
+            color: #0288d1;
+            cursor: pointer;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
+        }
+        .coding-slot.filled {
+            background: #4caf50;
+            border-style: solid;
+            border-color: #2e7d32;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+
+        /* Modals */
+        .modal-overlay {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+        .bounce-in {
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Certificate Print Styles */
+        @media print {
+            body * { visibility: hidden; background: white;}
+            #screen-certificate, #screen-certificate * { visibility: visible; }
+            #screen-certificate {
+                position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+                background: white !important; display: flex; align-items: center; justify-content: center;
+            }
+            .no-print { display: none !important; }
+            .cert-bg { 
+                border: 10px solid #4facfe; box-shadow: none !important;
+                background: url('https://www.transparenttextures.com/patterns/cubes.png') !important;
+            }
+        }
+        
+        .cert-bg {
+            background: #fff;
+            border: 10px solid #4facfe;
+            outline: 5px solid #ff9a9e;
+            outline-offset: -15px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="relative w-full h-screen">
+
+    <!-- SCREEN 1: INTRO -->
+    <div id="screen-intro" class="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-blue-300 to-blue-500 z-10 text-center">
+        <div class="bg-white/30 backdrop-blur-md p-8 rounded-3xl shadow-2xl border-4 border-white max-w-lg w-full">
+            <h1 class="text-4xl md:text-5xl font-black text-white drop-shadow-md mb-2 tracking-wide" style="-webkit-text-stroke: 2px #01579b;">MISI<br>PENYELAMATAN LAUT!</h1>
+            <p class="text-lg font-bold text-yellow-300 drop-shadow-sm mb-6">Oleh: Avila Debby <br> TK PGRI Janti</p>
+            
+            <div class="bg-white rounded-2xl p-4 mb-8 shadow-inner text-blue-900 font-bold">
+                <h2 class="text-xl mb-2 flex items-center justify-center gap-2">📖 Aturan Main:</h2>
+                <p class="text-sm md:text-base">Hewan laut butuh bantuanmu! Tarik sampah ke tempat yang tepat, lalu selesaikan misi Coding!</p>
+                <ul class="text-left mt-3 text-sm space-y-1">
+                    <li>🟢 <b>Hijau (Organik):</b> Sisa makanan/daun.</li>
+                    <li>🟡 <b>Kuning (Anorganik):</b> Plastik/Kaleng/Kaca.</li>
+                    <li>🔴 <b>Merah (B3):</b> Baterai/Obat/Berbahaya.</li>
+                </ul>
+            </div>
+            
+            <button onclick="startGame()" class="btn-3d w-full">Mulai Bermain 🚀</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: GAME PILAH SAMPAH -->
+    <div id="screen-game" class="hidden absolute inset-0 flex flex-col">
+        <div class="ocean" id="ocean-bg"></div>
+
+        <!-- Top Bar -->
+        <div class="flex justify-between items-center p-4 z-10">
+            <div class="bg-white/80 backdrop-blur rounded-full px-4 py-2 text-lg font-bold text-blue-800 shadow-lg border-2 border-white">
+                Level <span id="level-display">1</span>/6
+            </div>
+            <div class="bg-white/80 backdrop-blur rounded-full px-4 py-2 text-lg font-bold text-green-700 shadow-lg border-2 border-white">
+                ⭐ <span id="score-display">0</span>
+            </div>
+        </div>
+
+        <div class="flex-1 relative" id="game-area"></div>
+
+        <div class="h-40 bg-gradient-to-t from-[#8b5a2b] to-transparent flex justify-center items-end pb-4 gap-4 md:gap-10 z-10">
+            <div class="bin organik" data-type="organik">
+                <span class="text-3xl mb-1">🍎</span><span class="text-xs uppercase">Organik</span>
+            </div>
+            <div class="bin anorganik" data-type="anorganik">
+                <span class="text-3xl mb-1">🧴</span><span class="text-xs uppercase">Anorganik</span>
+            </div>
+            <div class="bin b3" data-type="b3">
+                <span class="text-3xl mb-1">🔋</span><span class="text-xs uppercase">B3</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: CODING LITERASI, NUMERASI, FISIK -->
+    <div id="screen-coding" class="hidden absolute inset-0 flex flex-col items-center justify-start p-4 z-10">
+        <div class="ocean"></div>
+        
+        <div class="bg-white/90 backdrop-blur-md w-full max-w-2xl rounded-3xl p-6 mt-10 shadow-2xl border-4 border-white text-center flex flex-col items-center">
+            <h2 id="coding-title" class="text-3xl font-black text-blue-600 mb-2">Level Coding</h2>
+            <p id="coding-instruction" class="text-lg font-bold text-gray-700 mb-6 bg-yellow-100 p-3 rounded-xl w-full">Instruksi</p>
+            
+            <!-- Target Slots (Sequence) -->
+            <div id="coding-slots" class="flex flex-wrap justify-center gap-3 mb-8 min-h-[80px]">
+                <!-- Slots generated here -->
+            </div>
+            
+            <hr class="w-full border-2 border-dashed border-gray-300 mb-6">
+
+            <p class="font-bold text-blue-800 mb-4">Pilih blok di bawah ini dengan urutan yang benar!</p>
+            
+            <!-- Available Blocks to Tap -->
+            <div id="coding-blocks" class="flex flex-wrap justify-center gap-4 mb-8">
+                <!-- Blocks generated here -->
+            </div>
+            
+            <button id="btn-run-code" onclick="executeCoding()" class="btn-3d green w-full max-w-sm hidden">▶️ Jalankan Kode!</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: CERTIFICATE -->
+    <div id="screen-certificate" class="hidden absolute inset-0 flex flex-col items-center justify-center p-4 bg-yellow-100 z-10">
+        <div class="cert-bg p-8 md:p-12 max-w-2xl w-full text-center shadow-2xl rounded-xl">
+            <div class="text-6xl mb-4">🏆</div>
+            <h1 class="text-3xl md:text-5xl font-black text-blue-600 mb-2 uppercase tracking-wider">Sertifikat Penghargaan</h1>
+            <p class="text-lg font-bold text-gray-700 mb-6">Diberikan kepada Pahlawan Laut & Coder Cilik:</p>
+            
+            <input type="text" id="player-name" placeholder="Tulis Namamu Disini..." class="no-print text-center w-full max-w-md p-3 text-2xl font-bold border-4 border-yellow-400 rounded-xl mb-6 shadow-inner focus:outline-none focus:border-blue-500">
+            <h2 id="print-name" class="hidden text-4xl font-black text-red-500 mb-6 border-b-4 border-dashed border-gray-300 pb-2 inline-block min-w-[300px]"></h2>
+
+            <p class="text-md font-bold text-gray-700 mb-8 px-4">Telah berhasil memilah sampah dan menyelesaikan misi Coding Literasi, Numerasi & Fisik!</p>
+            
+            <div class="flex justify-between items-end mt-12 px-2 md:px-8">
+                <div class="text-center">
+                    <p class="text-sm font-bold text-gray-500 mb-1">Mengetahui,</p>
+                    <p class="font-black text-blue-800 text-lg">Avila Debby</p>
+                    <p class="text-xs font-bold text-gray-600">Guru TK PGRI Janti</p>
+                </div>
+                <div class="text-5xl opacity-80">🌊🐢🤖</div>
+            </div>
+        </div>
+        
+        <div class="no-print flex flex-col md:flex-row gap-4 mt-6">
+            <button onclick="printCertificate()" class="btn-3d blue">🖨️ Print Sertifikat</button>
+            <button onclick="location.reload()" class="btn-3d">🔄 Main Lagi</button>
+        </div>
+    </div>
+
+    <!-- MODAL: FEEDBACK -->
+    <div id="modal-feedback" class="hidden absolute inset-0 modal-overlay flex flex-col items-center justify-center p-4">
+        <div id="feedback-content" class="bounce-in flex flex-col items-center max-w-md w-full">
+            <div class="speech-bubble text-center mb-6 w-full" id="feedback-message"></div>
+            <div class="text-9xl filter drop-shadow-2xl" id="feedback-character">🐢</div>
+            <button id="btn-lanjut" onclick="closeModalAndNext()" class="btn-3d mt-8 w-full">Lanjut! ➡️</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- AUDIO SYSTEM (Tone.js & TTS) ---
+    let synth, bgMusic;
+    let isAudioInit = false;
+
+    async function initAudio() {
+        if (isAudioInit) return;
+        await Tone.start();
+        
+        // Setup simple Synth for Sound Effects
+        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        synth.volume.value = -5;
+
+        // Setup gentle background music loop
+        const notes = ["C4", "E4", "G4", "A4"];
+        let index = 0;
+        bgMusic = new Tone.Loop(time => {
+            synth.triggerAttackRelease(notes[index % notes.length], "8n", time, 0.1);
+            index++;
+        }, "4n");
+        Tone.Transport.bpm.value = 100;
+        Tone.Transport.start();
+        bgMusic.start(0);
+        
+        isAudioInit = true;
+    }
+
+    function playSoundEffect(type) {
+        if (!synth) return;
+        if (type === 'win') {
+            synth.triggerAttackRelease(["C5", "E5", "G5"], "4n");
+        } else if (type === 'lose') {
+            synth.triggerAttackRelease(["C4", "C#3"], "4n");
+        } else if (type === 'pop') {
+            synth.triggerAttackRelease("C5", "16n");
+        }
+    }
+
+    function playVoice(text, onEndCallback = null) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Stop any current speech
+            let msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'id-ID';
+            msg.rate = 0.85; // Diperlambat sedikit agar lebih jelas
+            msg.pitch = 1.3; // Nada ditinggikan agar terdengar riang dan ramah anak
+            
+            if(onEndCallback) {
+                msg.onend = onEndCallback;
+            }
+            window.speechSynthesis.speak(msg);
+        } else {
+            if(onEndCallback) onEndCallback();
+        }
+    }
+
+
+    // --- GAME DATA ---
+    const TRASH_DATA = [
+        { id: 'o1', emoji: '🍌', type: 'organik', char: '🐢', msg: 'Kulit pisang ini organik. Cepat hancur, tapi laut kita bukan tempat sampah ya!' },
+        { id: 'o2', emoji: '🍂', type: 'organik', char: '🐢', msg: 'Hebat! Daun ini sampah organik. Ikan butuh laut yang bersih untuk bernapas bebas.' },
+        { id: 'a1', emoji: '🧴', type: 'anorganik', char: '🐬', msg: 'Terima kasih! Botol plastik itu anorganik. Kura-kura sering mengira plastik itu makanan!' },
+        { id: 'a2', emoji: '🥫', type: 'anorganik', char: '🐬', msg: 'Yeeay! Kaleng bekas ini anorganik. Sekarang laut jadi aman karena kamu kumpulkan!' },
+        { id: 'b1', emoji: '🔋', type: 'b3', char: '🐙', msg: 'Fiuh, selamat! Baterai itu B3, racunnya sangat berbahaya merusak terumbu karang!' },
+        { id: 'b2', emoji: '💊', type: 'b3', char: '🐙', msg: 'Wah berani! Obat bekas itu B3. Kalau mencemari air, semua temanku bisa sakit!' }
+    ];
+
+    const CODING_DATA = {
+        literasi: {
+            title: "Level 4: Coding Literasi 🔤",
+            instruction: "Tarik blok huruf secara berurutan untuk menyusun kata LAUT",
+            // Kotak huruf barisan bawah urut: kuning, biru, merah, ungu.
+            blocks: [
+                {id: 'U', label: 'U', color: '#fbc02d', borderColor: '#f9a825'}, // Kuning
+                {id: 'L', label: 'L', color: '#4facfe', borderColor: '#0288d1'}, // Biru
+                {id: 'T', label: 'T', color: '#ef5350', borderColor: '#c62828'}, // Merah
+                {id: 'A', label: 'A', color: '#ab47bc', borderColor: '#6a1b9a'}  // Ungu
+            ],
+            target: ['L', 'A', 'U', 'T'],
+            // Kotak kosong barisan atas urut: biru, ungu, kuning, merah
+            slotColors: ['#4facfe', '#ab47bc', '#fbc02d', '#ef5350'],
+            successMsg: "Pintar! Kata LAUT berhasil disusun. Laut yang bersih membuat ikan bahagia!",
+            char: "🐬"
+        },
+        numerasi: {
+            title: "Level 5: Coding Numerasi 🔢",
+            instruction: "Bantu aku berhitung! Cocokkan binatang laut dengan angka yang tepat di atasnya!",
+            // Kotak atas diberi angka urut dari kiri ke kanan: 3, 2, 1, 4
+            slotsLabel: ['3', '2', '1', '4'],
+            // Binatang laut di bawah: ikan(1), gurita(2), kepiting(3), penyu(4)
+            blocks: [
+                {id: '1', label: '🐟 1', color: '#ffca28', borderColor: '#f57f17'}, 
+                {id: '2', label: '🐙 2', color: '#ffca28', borderColor: '#f57f17'}, 
+                {id: '3', label: '🦀 3', color: '#ffca28', borderColor: '#f57f17'}, 
+                {id: '4', label: '🐢 4', color: '#ffca28', borderColor: '#f57f17'}
+            ],
+            target: ['3', '2', '1', '4'],
+            successMsg: "Hebat! Kamu berhasil mencocokkan urutan angkanya dengan benar!",
+            char: "🐙"
+        },
+        fisik: {
+            title: "Level 6: Coding Perintah Fisik 🏃",
+            instruction: "Pilih 3 blok gerakan bebas untuk Senam Pahlawan Laut, lalu tekan Jalankan dan ikuti gerakannya!",
+            // Mengganti ikon hewan dengan gambar orang menari/lari
+            blocks: [
+                {id: 'Tepuk Tangan', label: '👏 Tepuk', color: '#81c784', borderColor: '#2e7d32'}, 
+                {id: 'Menari', label: '💃 Menari', color: '#81c784', borderColor: '#2e7d32'}, 
+                {id: 'Lari', label: '🏃 Lari', color: '#81c784', borderColor: '#2e7d32'}
+            ],
+            target: 'any3',
+            successMsg: "Hore! Badan jadi sehat, laut pun terjaga bersih!",
+            char: "🐢"
+        }
+    };
+
+    // Progression: 3 Trash Levels (Tingkat Kesulitan Bertambah), then 3 Coding Levels
+    const GAME_STAGES = [
+        { type: 'sorting', level: 1, count: 2 }, // level 1: 2 sampah
+        { type: 'sorting', level: 2, count: 3 }, // level 2: 3 sampah
+        { type: 'sorting', level: 3, count: 4 }, // level 3: 4 sampah
+        { type: 'coding', level: 4, dataKey: 'literasi' },
+        { type: 'coding', level: 5, dataKey: 'numerasi' },
+        { type: 'coding', level: 6, dataKey: 'fisik' }
+    ];
+
+    let currentLevelIndex = 0;
+    let score = 0;
+    
+    // Trash Sorting State
+    let currentTrashQueue = [];
+    let currentTrashElement = null;
+    let activeTrashData = null;
+
+    // Coding Game State
+    let currentCodingStageData = null;
+    let filledSlots = [];
+
+    // Screen Elements
+    const screenIntro = document.getElementById('screen-intro');
+    const screenGame = document.getElementById('screen-game');
+    const screenCoding = document.getElementById('screen-coding');
+    const screenCertificate = document.getElementById('screen-certificate');
+    const modalFeedback = document.getElementById('modal-feedback');
+    const levelDisplay = document.getElementById('level-display');
+    const scoreDisplay = document.getElementById('score-display');
+    
+    // Initialization Background Bubbles
+    function createBubbles() {
+        document.querySelectorAll('.ocean').forEach(ocean => {
+            for(let i=0; i<15; i++) {
+                let bubble = document.createElement('div');
+                bubble.classList.add('bubble');
+                let size = Math.random() * 20 + 10;
+                bubble.style.width = size + 'px'; bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + 'vw';
+                bubble.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                bubble.style.animationDelay = Math.random() * 5 + 's';
+                ocean.appendChild(bubble);
+            }
+        });
+    }
+    createBubbles();
+
+    // Fungsi baru untuk memunculkan biota laut berenang dan terumbu karang
+    function createScenery() {
+        const oceanBg = document.getElementById('ocean-bg');
+        
+        // Terumbu Karang
+        const corals = ['🪸', '🌿', '🐚', '🦀', '🪸'];
+        for(let i=0; i<7; i++) {
+            let coral = document.createElement('div');
+            coral.classList.add('coral-reef');
+            coral.innerText = corals[Math.floor(Math.random() * corals.length)];
+            coral.style.left = (i * 15 + Math.random() * 10) + 'vw';
+            coral.style.fontSize = (Math.random() * 2 + 2.5) + 'rem';
+            oceanBg.appendChild(coral);
+        }
+
+        // Ikan Berenang
+        const fishes = ['🐟', '🐠', '🐡', '🐢', '🦑'];
+        for(let i=0; i<6; i++) {
+            let fish = document.createElement('div');
+            fish.classList.add('swimming-fish');
+            fish.innerText = fishes[Math.floor(Math.random() * fishes.length)];
+            fish.style.top = (Math.random() * 40 + 15) + 'vh';
+            
+            let isRight = Math.random() > 0.5;
+            if(isRight) {
+                fish.classList.add('swim-right');
+            } else {
+                fish.classList.add('swim-left');
+            }
+            
+            fish.style.animationDuration = (Math.random() * 15 + 10) + 's';
+            fish.style.animationDelay = (Math.random() * 5) + 's';
+            oceanBg.appendChild(fish);
+        }
+    }
+    createScenery();
+
+    async function startGame() {
+        await initAudio(); // Must wait for user gesture
+        playVoice("Selamat datang Pahlawan Laut! Ayo mulai petualangan kita.");
+        screenIntro.classList.add('hidden');
+        currentLevelIndex = 0;
+        score = 0;
+        loadStage();
+    }
+
+    function loadStage() {
+        if (currentLevelIndex >= GAME_STAGES.length) {
+            showCertificate();
+            return;
+        }
+
+        let stage = GAME_STAGES[currentLevelIndex];
+        levelDisplay.innerText = stage.level;
+        scoreDisplay.innerText = score;
+
+        if (stage.type === 'sorting') {
+            screenCoding.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            // Select random trash items for this level
+            let shuffled = [...TRASH_DATA].sort(() => 0.5 - Math.random());
+            currentTrashQueue = shuffled.slice(0, stage.count);
+            spawnNextTrash();
+        } else if (stage.type === 'coding') {
+            screenGame.classList.add('hidden');
+            screenCoding.classList.remove('hidden');
+            initCodingStage(stage.dataKey);
+        }
+    }
+
+    // --- GAME LOGIC: TRASH SORTING ---
+    function spawnNextTrash() {
+        if (currentTrashQueue.length === 0) {
+            currentLevelIndex++;
+            loadStage();
+            return;
+        }
+
+        activeTrashData = currentTrashQueue.pop();
+        currentTrashElement = document.createElement('div');
+        currentTrashElement.classList.add('trash-item');
+        currentTrashElement.innerHTML = activeTrashData.emoji;
+        
+        currentTrashElement.style.left = '50%';
+        currentTrashElement.style.top = '30%';
+        currentTrashElement.style.transform = 'translate(-50%, -50%)';
+        document.getElementById('game-area').appendChild(currentTrashElement);
+
+        setupDrag(currentTrashElement);
+    }
+
+    function setupDrag(element) {
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+        let rect;
+
+        function onPointerDown(e) {
+            isDragging = true;
+            element.classList.add('dragging');
+            rect = element.getBoundingClientRect();
+            startX = e.clientX || (e.touches && e.touches[0].clientX);
+            startY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            element.style.transform = 'none';
+            element.style.left = rect.left + 'px';
+            element.style.top = rect.top + 'px';
+            initialX = rect.left;
+            initialY = rect.top;
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            let currentX = e.clientX || (e.touches && e.touches[0].clientX);
+            let currentY = e.clientY || (e.touches && e.touches[0].clientY);
+            element.style.left = (initialX + (currentX - startX)) + 'px';
+            element.style.top = (initialY + (currentY - startY)) + 'px';
+            
+            // Hover effect
+            document.querySelectorAll('.bin').forEach(b => b.classList.remove('bin-highlight'));
+            let bin = getBinAtPosition(currentX, currentY);
+            if (bin) bin.classList.add('bin-highlight');
+        }
+
+        function onPointerUp(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            element.classList.remove('dragging');
+            document.querySelectorAll('.bin').forEach(b => b.classList.remove('bin-highlight'));
+            
+            let currentX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+            let currentY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+            let droppedBin = getBinAtPosition(currentX, currentY);
+
+            if (droppedBin) {
+                handleDrop(droppedBin.getAttribute('data-type'));
+            } else {
+                element.style.transition = 'all 0.3s ease';
+                element.style.left = '50%';
+                element.style.top = '30%';
+                element.style.transform = 'translate(-50%, -50%)';
+                setTimeout(() => { element.style.transition = 'transform 0.2s ease'; }, 300);
+            }
+        }
+
+        element.addEventListener('mousedown', onPointerDown);
+        document.addEventListener('mousemove', onPointerMove, {passive: false});
+        document.addEventListener('mouseup', onPointerUp);
+        element.addEventListener('touchstart', onPointerDown, {passive: false});
+        document.addEventListener('touchmove', onPointerMove, {passive: false});
+        document.addEventListener('touchend', onPointerUp);
+    }
+
+    function getBinAtPosition(x, y) {
+        for (let bin of document.querySelectorAll('.bin')) {
+            let rect = bin.getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return bin;
+        }
+        return null;
+    }
+
+    function handleDrop(binType) {
+        if (binType === activeTrashData.type) {
+            score += 10;
+            showSortingFeedback(true);
+        } else {
+            showSortingFeedback(false, binType);
+        }
+    }
+
+    // --- GAME LOGIC: CODING LEVELS ---
+    function initCodingStage(dataKey) {
+        currentCodingStageData = CODING_DATA[dataKey];
+        filledSlots = [];
+        
+        document.getElementById('coding-title').innerText = currentCodingStageData.title;
+        document.getElementById('coding-instruction').innerText = currentCodingStageData.instruction;
+        
+        // Speak instruction
+        playVoice(currentCodingStageData.instruction);
+
+        let slotsContainer = document.getElementById('coding-slots');
+        let blocksContainer = document.getElementById('coding-blocks');
+        let runBtn = document.getElementById('btn-run-code');
+        
+        slotsContainer.innerHTML = '';
+        blocksContainer.innerHTML = '';
+        runBtn.classList.add('hidden');
+
+        // Target length (Fisik always needs 3, others match target array)
+        let slotCount = (currentCodingStageData.target === 'any3') ? 3 : currentCodingStageData.target.length;
+        
+        // Render empty slots
+        for(let i=0; i<slotCount; i++) {
+            let slot = document.createElement('div');
+            slot.classList.add('coding-slot');
+            slot.dataset.index = i;
+            
+            // Konfigurasi warna khusus (Literasi & Numerasi)
+            if (currentCodingStageData.slotColors) {
+                slot.style.borderStyle = 'solid';
+                slot.style.borderWidth = '6px';
+                slot.style.borderColor = currentCodingStageData.slotColors[i];
+            }
+            if (currentCodingStageData.slotsLabel) {
+                slot.innerText = currentCodingStageData.slotsLabel[i];
+                slot.style.color = '#0288d1';
+            }
+            
+            slot.onclick = () => removeBlockFromSlot(i);
+            slotsContainer.appendChild(slot);
+        }
+
+        // Render available blocks
+        currentCodingStageData.blocks.forEach(blockData => {
+            let block = document.createElement('div');
+            block.classList.add('coding-block');
+            block.innerHTML = blockData.label; 
+            block.dataset.id = blockData.id;
+            
+            // Konfigurasi warna khusus blok pilihan
+            if (blockData.color) {
+                block.style.background = blockData.color;
+                block.style.color = 'white';
+                block.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+                block.style.borderColor = blockData.borderColor || '#f9a825';
+                block.style.boxShadow = `0 6px 0 ${blockData.borderColor || '#f9a825'}, 0 10px 15px rgba(0,0,0,0.2)`;
+            }
+
+            block.onclick = () => addBlockToSlot(blockData);
+            blocksContainer.appendChild(block);
+        });
+    }
+
+    function addBlockToSlot(blockData) {
+        let slotCount = (currentCodingStageData.target === 'any3') ? 3 : currentCodingStageData.target.length;
+        if (filledSlots.length < slotCount) {
+            playSoundEffect('pop');
+            filledSlots.push(blockData);
+            renderSlots();
+        }
+    }
+
+    function removeBlockFromSlot(index) {
+        if (index < filledSlots.length) {
+            playSoundEffect('pop');
+            filledSlots.splice(index, 1);
+            renderSlots();
+        }
+    }
+
+    function renderSlots() {
+        let slotsContainer = document.getElementById('coding-slots');
+        let children = slotsContainer.children;
+        let slotCount = (currentCodingStageData.target === 'any3') ? 3 : currentCodingStageData.target.length;
+        
+        for(let i=0; i<slotCount; i++) {
+            let slot = children[i];
+            if (filledSlots[i]) {
+                slot.innerHTML = filledSlots[i].label;
+                slot.classList.add('filled');
+                
+                // Menerapkan gaya khusus jika ada (warna-warni literasi)
+                if (filledSlots[i].color) {
+                    slot.style.background = filledSlots[i].color;
+                    slot.style.borderColor = filledSlots[i].borderColor || '#2e7d32';
+                    slot.style.color = 'white';
+                } else {
+                    slot.style.background = '#4caf50';
+                    slot.style.borderColor = '#2e7d32';
+                    slot.style.color = 'white';
+                }
+            } else {
+                // Tampilan saat kosong kembali
+                slot.innerHTML = currentCodingStageData.slotsLabel ? currentCodingStageData.slotsLabel[i] : '';
+                slot.classList.remove('filled');
+                slot.style.background = 'rgba(0,0,0,0.05)';
+                slot.style.color = '#0288d1';
+                
+                if (currentCodingStageData.slotColors) {
+                    slot.style.borderColor = currentCodingStageData.slotColors[i];
+                } else {
+                    slot.style.borderColor = '#90caf9';
+                }
+            }
+        }
+
+        // Show run button only if all slots are filled
+        let runBtn = document.getElementById('btn-run-code');
+        if (filledSlots.length === slotCount) {
+            runBtn.classList.remove('hidden');
+            runBtn.classList.add('bounce-in');
+        } else {
+            runBtn.classList.add('hidden');
+            runBtn.classList.remove('bounce-in');
+        }
+    }
+
+    async function executeCoding() {
+        let target = currentCodingStageData.target;
+        let isFisik = target === 'any3';
+        
+        if (isFisik) {
+            // Physical Execution Logic
+            let runBtn = document.getElementById('btn-run-code');
+            runBtn.disabled = true;
+            runBtn.innerText = "⏳ Sedang Menjalankan...";
+            
+            let slots = document.getElementById('coding-slots').children;
+            
+            for (let i = 0; i < filledSlots.length; i++) {
+                // Highlight active slot
+                slots[i].style.transform = 'scale(1.2)';
+                slots[i].style.boxShadow = '0 0 20px yellow';
+                
+                let actionName = filledSlots[i].id;
+                playVoice("Gerakan ke " + (i+1) + "... " + actionName);
+                playSoundEffect('pop');
+                
+                // Wait for voice and child action
+                await new Promise(resolve => setTimeout(resolve, 3500));
+                
+                // Remove highlight
+                slots[i].style.transform = 'scale(1)';
+                slots[i].style.boxShadow = '0 5px 10px rgba(0,0,0,0.3)';
+            }
+            
+            runBtn.disabled = false;
+            runBtn.innerText = "▶️ Jalankan Kode!";
+            score += 20;
+            showCodingFeedback(true);
+            
+        } else {
+            // Logic/Sequence check
+            let isCorrect = true;
+            for(let i=0; i<target.length; i++) {
+                if (filledSlots[i].id !== target[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                score += 20;
+                showCodingFeedback(true);
+            } else {
+                showCodingFeedback(false);
+            }
+        }
+    }
+
+    // --- FEEDBACK & PROGRESSION ---
+    function showSortingFeedback(isSuccess, wrongBinType = '') {
+        if (currentTrashElement) {
+            currentTrashElement.remove();
+            currentTrashElement = null;
+        }
+
+        let voiceText = "";
+        let charEmoji = activeTrashData.char;
+
+        if (isSuccess) {
+            // Memodifikasi ucapan khusus jika terdapat kata "Yeeay!" menjadi "Ye!" yang lebih semangat (bersorak)
+            let spokenMsg = activeTrashData.msg.replace(/Yeeay!/ig, "Ye!");
+            voiceText = "Benar! " + spokenMsg;
+            playSoundEffect('win');
+            document.getElementById('feedback-message').innerHTML = `<span class='text-green-600 font-black text-2xl'>BENAAR! 🎉</span><br>${activeTrashData.msg}`;
+        } else {
+            let correctColor = activeTrashData.type === 'organik' ? 'Hijau (Organik)' : (activeTrashData.type === 'anorganik' ? 'Kuning (Anorganik)' : 'Merah (B3)');
+            voiceText = "Ups! Kurang Tepat. Sampah ini seharusnya di tong " + correctColor + ". Ayo coba lagi!";
+            playSoundEffect('lose');
+            charEmoji = '🦀'; // Mr Crab for motivation
+            document.getElementById('feedback-message').innerHTML = `<span class='text-red-500 font-black text-2xl'>Ups! Kurang Tepat 😅</span><br>Sampah ini seharusnya masuk ke tong warna <b>${correctColor}</b>. Ayo coba lagi! 💪`;
+            currentTrashQueue.push(activeTrashData); // Retry
+        }
+        
+        document.getElementById('feedback-character').innerText = charEmoji;
+        displayFeedbackModal(voiceText);
+    }
+
+    function showCodingFeedback(isSuccess) {
+        let voiceText = "";
+        let charEmoji = currentCodingStageData.char || "🤖";
+
+        if (isSuccess) {
+            voiceText = "Benar kodenya! " + currentCodingStageData.successMsg; // Tanpa emoji
+            playSoundEffect('win');
+            document.getElementById('feedback-message').innerHTML = `<span class='text-green-600 font-black text-2xl'>KODE BERHASIL! 🎉</span><br>${currentCodingStageData.successMsg}`;
+        } else {
+            voiceText = "Ups! Urutan kodenya belum tepat. Coba ketuk untuk menghapus blok dan susun ulang ya!";
+            playSoundEffect('lose');
+            charEmoji = '🦀';
+            document.getElementById('feedback-message').innerHTML = `<span class='text-red-500 font-black text-2xl'>Ups! Kode Keliru 😅</span><br>Urutan susunannya belum pas. Yuk coba lagi!`;
+            // Do not advance level if fail, they just retry
+        }
+
+        document.getElementById('feedback-character').innerText = charEmoji;
+        displayFeedbackModal(voiceText, isSuccess);
+    }
+
+    function displayFeedbackModal(voiceText, isCodingSuccess = null) {
+        modalFeedback.classList.remove('hidden');
+        document.getElementById('btn-lanjut').disabled = true; // prevent double clicking
+        
+        // Retrigger animation
+        const content = document.getElementById('feedback-content');
+        content.classList.remove('bounce-in');
+        void content.offsetWidth;
+        content.classList.add('bounce-in');
+        
+        // Play TTS Voice
+        playVoice(voiceText, () => {
+            document.getElementById('btn-lanjut').disabled = false;
+        });
+        
+        // Fallback enable button after 4s just in case speech API fails
+        setTimeout(() => { document.getElementById('btn-lanjut').disabled = false; }, 4000);
+
+        // Store success state on the button temporarily to guide next action
+        document.getElementById('btn-lanjut').dataset.codingSuccess = isCodingSuccess !== null ? isCodingSuccess : 'sorting';
+    }
+
+    function closeModalAndNext() {
+        modalFeedback.classList.add('hidden');
+        window.speechSynthesis.cancel();
+        
+        let state = document.getElementById('btn-lanjut').dataset.codingSuccess;
+        
+        if (state === 'sorting') {
+            spawnNextTrash();
+        } else if (state === 'true') { // Coding Success
+            currentLevelIndex++;
+            loadStage();
+        } else if (state === 'false') { // Coding Fail
+            // just stay on current screen to let them try again
+            filledSlots = [];
+            renderSlots();
+        }
+    }
+
+    // --- CERTIFICATE LOGIC ---
+    const playerNameInput = document.getElementById('player-name');
+    const printNameDisplay = document.getElementById('print-name');
+
+    playerNameInput.addEventListener('input', (e) => {
+        let name = e.target.value.trim();
+        printNameDisplay.innerText = name === '' ? '............................' : name;
+    });
+
+    function showCertificate() {
+        screenGame.classList.add('hidden');
+        screenCoding.classList.add('hidden');
+        screenCertificate.classList.remove('hidden');
+        playSoundEffect('win');
+        playVoice("Luar biasa! Kamu telah menyelesaikan semua misi. Ini sertifikat pahlawan laut untukmu!");
+        printNameDisplay.innerText = '............................';
+    }
+
+    function printCertificate() {
+        let name = playerNameInput.value.trim();
+        printNameDisplay.innerText = name ? name : 'Pahlawan Laut'; 
+        
+        playerNameInput.classList.add('hidden');
+        printNameDisplay.classList.remove('hidden');
+        printNameDisplay.style.display = 'inline-block';
+        
+        window.print();
+        
+        setTimeout(() => {
+            playerNameInput.classList.remove('hidden');
+            printNameDisplay.classList.add('hidden');
+            printNameDisplay.style.display = 'none';
+        }, 1000);
+    }
+</script>
+</body>
+</html>
